@@ -12,12 +12,12 @@ const config: HardhatUserConfig = {
         url: "https://bsc-dataseed4.ninicoin.io/", // https://docs.bscscan.com/misc-tools-and-utilities/public-rpc-nodes
       }
     },
-    bnb: {
+    mainnet: {
       url: "https://bsc-dataseed1.binance.org/",
       chainId: 56,
       accounts: [process.env.PRIVATE_KEY || ""]
     },
-    bnb_testnet: {
+    testnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       chainId: 97,
       accounts: [process.env.PRIVATE_KEY || ""]
