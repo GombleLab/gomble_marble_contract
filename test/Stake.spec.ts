@@ -9,7 +9,7 @@ import {
   VTokenMocked__factory
 } from "../typechain-types";
 import {MAX_UINT256, ZERO_ADDRESS} from "../tasks/utils";
-import {advanceTimeAndBlock} from "./utils";
+import {advanceTimeAndBlock, getRandomUint256, makeMessage} from "./utils";
 import type {Signer} from "ethers";
 
 describe("Stake Contract Test", function () {
@@ -23,6 +23,7 @@ describe("Stake Contract Test", function () {
   let stake: Stake;
   let signerAddress: string;
   let signer: Signer;
+  let farmOwner: Signer;
   let user1: Signer;
   let user2: Signer;
   let user3: Signer;
@@ -30,7 +31,7 @@ describe("Stake Contract Test", function () {
   let treasury: Signer;
 
   beforeEach(async () => {
-    [signer, user1, user2, user3, user4, treasury] = await ethers.getSigners();
+    [signer, farmOwner, user1, user2, user3, user4, treasury] = await ethers.getSigners();
     signerAddress = await signer.getAddress();
 
     underlyingMocked1 = await new ERC20Mocked__factory(signer).deploy(
@@ -88,6 +89,7 @@ describe("Stake Contract Test", function () {
       await unitroller.getAddress(),
       await vBnbMocked.getAddress(),
       MINIMUM_AMOUNT,
+      await farmOwner.getAddress(),
       [await underlyingMocked1.getAddress()],
       [MINIMUM_AMOUNT]
     );
@@ -142,6 +144,21 @@ describe("Stake Contract Test", function () {
       expect(afterTokenList.includes(tokenAddress)).to.be.false;
       expect(await stake.getMinimumAmount(tokenAddress)).to.be.eq(0);
       expect(await stake.getRegisteredVToken(tokenAddress)).to.be.eq(ZERO_ADDRESS);
+    });
+
+    it("farm", async function() {
+      const nonce = getRandomUint256();
+      const signature = await farmOwner.signMessage(makeMessage(nonce, DEFAULT_AMOUNT));
+      await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
+      const mmAmount = await stake.getMMAmount(await user1.getAddress());
+      expect(mmAmount).to.be.eq(DEFAULT_AMOUNT);
+    });
+
+    it("farm, used nonce", async function() {
+      const nonce = getRandomUint256();
+      const signature = await farmOwner.signMessage(makeMessage(nonce, DEFAULT_AMOUNT));
+      await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
+      await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
     });
   });
 });

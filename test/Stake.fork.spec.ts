@@ -7,6 +7,7 @@ import {
 import {MAX_UINT256} from "../tasks/utils";
 import type {Signer} from "ethers";
 import 'dotenv/config'
+import {advanceTimeAndBlock} from "./utils";
 
 const crypto = require('crypto');
 
@@ -56,6 +57,7 @@ describe("Stake Contract Test", function () {
       UNITROLLER_ADDRESS,
       VBNB_ADDRESS,
       MINIMUM_AMOUNT,
+      ownerAddress,
       [USDC_ADDRESS],
       [MINIMUM_AMOUNT]
     );
@@ -78,7 +80,7 @@ describe("Stake Contract Test", function () {
 
     it("unstake token", async function () {
       await stake.stake(USDC_ADDRESS, DEFAULT_AMOUNT);
-      await increaseBlockNumber(100);
+      await advanceTimeAndBlock(100);
 
       const beforeUserAmount = await usdc.balanceOf(ownerAddress);
       const beforeTreasuryAmount = await usdc.balanceOf(TREASURY_ADDRESS);
@@ -118,7 +120,7 @@ describe("Stake Contract Test", function () {
       await stake.stake(BNB_ADDRESS, DEFAULT_AMOUNT, {
         value: DEFAULT_AMOUNT
       });
-      await increaseBlockNumber(100);
+      await advanceTimeAndBlock(100);
 
       const beforeUserAmount = await ethers.provider.getBalance(ownerAddress);
       const beforeTreasuryAmount = await ethers.provider.getBalance(TREASURY_ADDRESS);
@@ -147,7 +149,7 @@ describe("Stake Contract Test", function () {
     it("unstake partially", async function () {
       const partialAmount = DEFAULT_AMOUNT / 3n;
       await stake.stake(USDC_ADDRESS, DEFAULT_AMOUNT);
-      await increaseBlockNumber(100);
+      await advanceTimeAndBlock(100);
 
       const beforeUserAmount = await usdc.balanceOf(ownerAddress);
 
@@ -178,7 +180,7 @@ describe("Stake Contract Test", function () {
           const randomAmount = randomBigIntInRange(1n * 10n ** 12n, 1n * 10n ** 13n); // 0.00001 ~ 0.0001
           await stake.connect(user).stake(USDC_ADDRESS, randomAmount);
         }
-        await increaseBlockNumber(10);
+        await advanceTimeAndBlock(10);
         for (const user of users) {
           const stakedAmount = await stake.getStakedAmountOf(USDC_ADDRESS, await user.getAddress());
           const unstakeTx = await stake.connect(user).unstake(USDC_ADDRESS, stakedAmount);
@@ -189,7 +191,7 @@ describe("Stake Contract Test", function () {
               treasuryAmount += Array.from(parsedLog.args)[3];
             }
           }
-          await increaseBlockNumber(10);
+          await advanceTimeAndBlock(10);
         }
 
         const totalStaked = await stake.getTotalStaked(USDC_ADDRESS);
@@ -209,7 +211,7 @@ describe("Stake Contract Test", function () {
             value: randomAmount
           });
         }
-        await increaseBlockNumber(10);
+        await advanceTimeAndBlock(10);
         for (const user of users) {
           const stakedAmount = await stake.getStakedAmountOf(BNB_ADDRESS, await user.getAddress());
           const unstakeTx = await stake.connect(user).unstake(BNB_ADDRESS, stakedAmount);
@@ -220,7 +222,7 @@ describe("Stake Contract Test", function () {
               treasuryAmount += Array.from(parsedLog.args)[3];
             }
           }
-          await increaseBlockNumber(10);
+          await advanceTimeAndBlock(10);
         }
 
         const totalStaked = await stake.getTotalStaked(BNB_ADDRESS);
@@ -230,12 +232,6 @@ describe("Stake Contract Test", function () {
     });
   });
 });
-
-async function increaseBlockNumber(blocks: number) {
-  for (let i = 0; i < blocks; i++) {
-    await ethers.provider.send("evm_mine");
-  }
-}
 
 function randomBigIntInRange(min: bigint, max: bigint) {
   const range = max - min;

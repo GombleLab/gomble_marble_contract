@@ -28,7 +28,7 @@ contract Betting is Ownable {
     function bet(uint256 amount, uint256 nonce, bytes memory signature) external {
         address user = msg.sender;
         require(!betNonce[user][nonce], 'ALREADY USED NONCE');
-        verifySignature(betOwner, nonce, amount, signature);
+        _verifySignature(betOwner, nonce, amount, signature);
         bettingAmount[user] = bettingAmount[user] + amount;
         betNonce[user][nonce] = true;
     }
@@ -36,7 +36,7 @@ contract Betting is Ownable {
     function claim(uint256 amount, uint256 nonce, bytes memory signature) external {
         address user = msg.sender;
         require(!claimNonce[user][nonce], 'ALREADY USED NONCE');
-        verifySignature(claimOwner, nonce, amount, signature);
+        _verifySignature(claimOwner, nonce, amount, signature);
         claimAmount[user] = claimAmount[user] + amount;
         claimNonce[user][nonce] = true;
     }
@@ -57,7 +57,7 @@ contract Betting is Ownable {
         return claimAmount[user];
     }
 
-    function verifySignature(address owner, uint256 nonce, uint256 amount, bytes memory signature) public {
+    function _verifySignature(address owner, uint256 nonce, uint256 amount, bytes memory signature) internal {
         bytes32 messageHash = keccak256(abi.encode(nonce, amount));
         address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
         require(signer == owner, 'INVALID SIGNATURE');

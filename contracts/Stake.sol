@@ -10,9 +10,12 @@ import "./venus/ExponentialNoError.sol";
 import "./venus/CarefulMath.sol";
 import "./venus/Exponential.sol";
 import "./lib/VersionedInitializable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract Stake is Ownable, Exponential, VersionedInitializable {
     using SafeMath for uint256;
+    using ECDSA for bytes32;
 
     mapping(address => mapping(address => uint256)) internal _userTokenStaked; // token -> user -> staked amount
     mapping(address => uint256) internal _totalStakedAmount;  // token -> total staked amount
@@ -26,6 +29,10 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
     IUnitroller public unitroller;
     address public treasury;
 
+    // farm
+    address public farmOwner;
+    mapping(address => mapping(uint256 => bool)) farmNonce;
+
     uint256 public constant REVISION = 1;
 
     event Stake(address token, address user, uint256 amount);
@@ -38,12 +45,14 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         address _unitroller,
         address _vBNB,
         uint256 bnbMinimumAmount,
+        address _farmOwner,
         address[] memory tokens,
         uint256[] memory minimumAmounts
     ) external initializer {
         require(tokens.length == minimumAmounts.length, 'INVALID TOKEN LENGTH');
         unitroller = IUnitroller(_unitroller);
         treasury = _treasury;
+        farmOwner = _farmOwner;
         address[] memory vTokens = unitroller.getAllMarkets();
         for(uint256 index = 0; index < vTokens.length; index++) {
             address vToken = vTokens[index];
@@ -159,10 +168,6 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         return vToken.balanceOf(address(this));
     }
 
-    function farm(uint256 amount) external {
-        _mmAmount[msg.sender] = _mmAmount[msg.sender].add(amount);
-    }
-
     function addToken(address token, uint256 minimumAmount) external onlyOwner {
         require(_vTokenMap[token] == address(0), 'ALREADY REGISTERED TOKEN');
         address[] memory vTokens = unitroller.getAllMarkets();
@@ -203,6 +208,10 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         treasury = _treasury;
     }
 
+    function changeFarmOwner(address newOwner) public onlyOwner {
+        farmOwner = newOwner;
+    }
+
     function changeMinimumAmount(address token, uint256 amount) external onlyOwner {
         require(_vTokenMap[token] != address(0), 'NOT REGISTERED TOKEN');
         _minimumAmount[token] = amount;
@@ -224,6 +233,17 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         return REVISION;
     }
 
+    function farm(uint256 amount, uint256 nonce, bytes memory signature) external {
+        require(!farmNonce[msg.sender][nonce], 'ALREADY USED NONCE');
+        _verifySignature(farmOwner, nonce, amount, signature);
+        _mmAmount[msg.sender] = _mmAmount[msg.sender].add(amount);
+        farmNonce[msg.sender][nonce] = true;
+    }
+
+    function getMMAmount(address user) external view returns (uint256) {
+        return _mmAmount[user];
+    }
+
     // support for venus
     function _balanceOfUnderlying(address token, address user) internal view returns (uint256) {
         require(_vTokenMap[token] != address(0), 'INVALID TOKEN');
@@ -241,6 +261,12 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         }
 
         return (MathError.NO_ERROR, truncate(product));
+    }
+
+    function _verifySignature(address owner, uint256 nonce, uint256 amount, bytes memory signature) internal {
+        bytes32 messageHash = keccak256(abi.encode(nonce, amount));
+        address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
+        require(signer == owner, 'INVALID SIGNATURE');
     }
 
     receive() external payable {}

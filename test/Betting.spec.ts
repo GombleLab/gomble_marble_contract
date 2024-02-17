@@ -5,6 +5,7 @@ import {
 } from "../typechain-types";
 import type {Signer} from "ethers";
 import {AbiCoder} from "ethers";
+import {getRandomUint256, makeMessage} from "./utils";
 
 describe("Betting Contract Test", function () {
   const DEFAULT_AMOUNT = 100n * (10n ** 18n);
@@ -73,20 +74,3 @@ describe("Betting Contract Test", function () {
     });
   });
 });
-
-function makeMessage(nonce: string, amount: bigint | string) {
-  const encodedData = AbiCoder.defaultAbiCoder().encode(
-    ["uint256", "uint256"],
-    [nonce, amount]
-  );
-
-  const dataHash = ethers.keccak256(encodedData);
-
-
-  return ethers.toBeArray(dataHash);
-}
-
-function getRandomUint256() {
-  const randomBytes = ethers.randomBytes(32);
-  return ethers.hexlify(randomBytes);
-}

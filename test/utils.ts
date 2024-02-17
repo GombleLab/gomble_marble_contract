@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import {AbiCoder} from "ethers";
 
 export async function advanceTimeAndBlock(time: number) {
   await advanceTime(time);
@@ -13,4 +14,21 @@ export async function advanceBlock(count = 1) {
   for (let i = 0; i < count; i++) {
     await ethers.provider.send("evm_mine", []);
   }
+}
+
+export function makeMessage(nonce: string, amount: bigint | string) {
+  const encodedData = AbiCoder.defaultAbiCoder().encode(
+    ["uint256", "uint256"],
+    [nonce, amount]
+  );
+
+  const dataHash = ethers.keccak256(encodedData);
+
+
+  return ethers.toBeArray(dataHash);
+}
+
+export function getRandomUint256() {
+  const randomBytes = ethers.randomBytes(32);
+  return ethers.hexlify(randomBytes);
 }
