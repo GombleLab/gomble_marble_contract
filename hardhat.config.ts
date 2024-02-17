@@ -7,7 +7,10 @@ const config: HardhatUserConfig = {
   solidity: "0.8.20",
   networks: {
     hardhat: {
-      chainId: 56
+      chainId: 56,
+      forking: {
+        url: "https://bsc-dataseed4.ninicoin.io/", // https://docs.bscscan.com/misc-tools-and-utilities/public-rpc-nodes
+      }
     },
     bnb: {
       url: "https://bsc-dataseed1.binance.org/",

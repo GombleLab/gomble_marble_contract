@@ -1,5 +1,5 @@
-import { expect } from "chai";
-import { ethers } from "hardhat";
+import {expect} from "chai";
+import {ethers} from "hardhat";
 import {
   ERC20Mocked,
   ERC20Mocked__factory,
@@ -8,37 +8,60 @@ import {
   VTokenMocked,
   VTokenMocked__factory
 } from "../typechain-types";
-import {MAX_UINT256} from "../tasks/utils";
+import {MAX_UINT256, ZERO_ADDRESS} from "../tasks/utils";
 import {advanceTimeAndBlock} from "./utils";
+import type {Signer} from "ethers";
 
 describe("Stake Contract Test", function () {
   const DEFAULT_AMOUNT = 100n * (10n ** 18n);
-  let vTokenMocked: VTokenMocked;
+  const MINIMUM_AMOUNT = 1n * (10n ** 14n); // 0.0001, for test
+  let vTokenMocked1: VTokenMocked;
+  let underlyingMocked1: ERC20Mocked;
+  let vTokenMocked2: VTokenMocked;
+  let underlyingMocked2: ERC20Mocked;
   let vBnbMocked: VBnbMocked;
-  let underlyingMocked: ERC20Mocked;
   let stake: Stake;
   let signerAddress: string;
+  let signer: Signer;
+  let user1: Signer;
+  let user2: Signer;
+  let user3: Signer;
+  let user4: Signer;
+  let treasury: Signer;
 
   beforeEach(async () => {
-    const [ signer ] = await ethers.getSigners();
-    signerAddress = signer.address;
+    [signer, user1, user2, user3, user4, treasury] = await ethers.getSigners();
+    signerAddress = await signer.getAddress();
 
-    // underlying
-    underlyingMocked = await new ERC20Mocked__factory(signer).deploy(
-      'TEST',
-      'TEST TOKEN',
+    underlyingMocked1 = await new ERC20Mocked__factory(signer).deploy(
+      'TEST1',
+      'TEST TOKEN1',
       18
     );
-    await underlyingMocked.waitForDeployment();
+    await underlyingMocked1.waitForDeployment();
 
-    // vToken
-    vTokenMocked = await new VTokenMocked__factory(signer).deploy(
-      'VTEST',
-      'VTEST TOKEN',
+    vTokenMocked1 = await new VTokenMocked__factory(signer).deploy(
+      'VTEST1',
+      'VTEST TOKEN1',
       18,
-      await underlyingMocked.getAddress()
+      await underlyingMocked1.getAddress()
     );
-    await vTokenMocked.waitForDeployment();
+    await vTokenMocked1.waitForDeployment();
+
+    underlyingMocked2 = await new ERC20Mocked__factory(signer).deploy(
+      'TEST2',
+      'TEST TOKEN2',
+      18
+    );
+    await underlyingMocked2.waitForDeployment();
+
+    vTokenMocked2 = await new VTokenMocked__factory(signer).deploy(
+      'VTEST2',
+      'VTEST TOKEN2',
+      18,
+      await underlyingMocked2.getAddress()
+    );
+    await vTokenMocked2.waitForDeployment();
 
     // vBNB
     vBnbMocked = await new VBnbMocked__factory(signer).deploy(
@@ -50,49 +73,75 @@ describe("Stake Contract Test", function () {
 
     // unitroller
     const unitroller = await new UnitrollerMocked__factory(signer).deploy([
-      await vTokenMocked.getAddress(),
+      await vTokenMocked1.getAddress(),
+      await vTokenMocked2.getAddress(),
       await vBnbMocked.getAddress(),
     ]);
     await unitroller.waitForDeployment();
 
     // stake
-    stake = await new Stake__factory(signer).deploy(
+    stake = await new Stake__factory(signer).deploy(signerAddress);
+    await stake.waitForDeployment();
+
+    await stake.initialize(
+      await treasury.getAddress(),
       await unitroller.getAddress(),
       await vBnbMocked.getAddress(),
+      MINIMUM_AMOUNT,
+      [await underlyingMocked1.getAddress()],
+      [MINIMUM_AMOUNT]
     );
 
-    await underlyingMocked.mint(signerAddress, DEFAULT_AMOUNT);
-    await underlyingMocked.approve(await stake.getAddress(), MAX_UINT256);
+    await underlyingMocked1.mint(signerAddress, DEFAULT_AMOUNT);
+    await underlyingMocked1.approve(await stake.getAddress(), MAX_UINT256);
+
+    await underlyingMocked1.mint(signerAddress, DEFAULT_AMOUNT);
+    await underlyingMocked1.connect(user1).approve(await stake.getAddress(), MAX_UINT256);
+
+    await underlyingMocked1.mint(await user1.getAddress(), DEFAULT_AMOUNT);
+    await underlyingMocked1.connect(user2).approve(await stake.getAddress(), MAX_UINT256);
+
+    await underlyingMocked1.mint(await user2.getAddress(), DEFAULT_AMOUNT);
+    await underlyingMocked1.connect(user3).approve(await stake.getAddress(), MAX_UINT256);
+
+    await underlyingMocked1.mint(await user3.getAddress(), DEFAULT_AMOUNT);
+    await underlyingMocked1.connect(user4).approve(await stake.getAddress(), MAX_UINT256);
   });
 
-  describe("Stake/Unstake", function () {
-    it("stake token", async function () {
-      const tokenAddress = await underlyingMocked.getAddress();
-
-      await stake.stake(tokenAddress, DEFAULT_AMOUNT);
-      const totalStaked = await stake.getTotalStaked(tokenAddress);
-      expect(totalStaked).to.eq(DEFAULT_AMOUNT);
-      const stakedAmount = await stake.getStakedAmountOf(tokenAddress, signerAddress);
-      expect(stakedAmount).to.eq(DEFAULT_AMOUNT);
-      const cumulativeStaked = await stake.getCumulativeStaked(tokenAddress, signerAddress);
-      expect(cumulativeStaked).to.eq(0);
+  describe("miscellaneous", function () {
+    it("check minimum amount", async function () {
+      const tokenAddress = await underlyingMocked1.getAddress();
+      const minimumAmount = await stake.getMinimumAmount(tokenAddress);
+      await expect(stake.stake(tokenAddress, minimumAmount / 10n)).to.be.revertedWith('INVALID MINIMUM AMOUNT');
     });
 
-    it("unstake token", async function () {
-      const tokenAddress = await underlyingMocked.getAddress();
+    it("add token", async function () {
+      const tokenAddress = await underlyingMocked2.getAddress();
+      const beforeTokenList = await stake.getRegisteredTokens();
+      await stake.addToken(tokenAddress, MINIMUM_AMOUNT);
+      const afterTokenList = await stake.getRegisteredTokens();
 
-      await stake.stake(tokenAddress, DEFAULT_AMOUNT);
-      await advanceTimeAndBlock(100);
+      expect(beforeTokenList.length).to.be.eq(2);
+      expect(beforeTokenList.includes(tokenAddress)).to.be.false;
+      expect(afterTokenList.length).to.be.eq(3);
+      expect(afterTokenList.includes(tokenAddress)).to.be.true;
+      expect(await stake.getMinimumAmount(tokenAddress)).to.be.eq(MINIMUM_AMOUNT);
+      expect(await stake.getRegisteredVToken(tokenAddress)).to.be.eq(await vTokenMocked2.getAddress());
+    });
 
-      console.log(`latestActionTime ${await stake.getLatestActionTime(tokenAddress, signerAddress)}`);
+    it("remove token", async function () {
+      const tokenAddress = await underlyingMocked2.getAddress();
+      await stake.addToken(tokenAddress, MINIMUM_AMOUNT);
+      const beforeTokenList = await stake.getRegisteredTokens();
+      await stake.removeToken(tokenAddress);
+      const afterTokenList = await stake.getRegisteredTokens();
 
-      await stake.unstake(tokenAddress, DEFAULT_AMOUNT);
-      const totalStaked = await stake.getTotalStaked(tokenAddress);
-      expect(totalStaked).to.eq(0);
-      const stakedAmount = await stake.getStakedAmountOf(tokenAddress, signerAddress);
-      expect(stakedAmount).to.eq(0);
-      const cumulativeStaked = await stake.getCumulativeStaked(tokenAddress, signerAddress);
-      expect(cumulativeStaked).to.eq(0);
+      expect(beforeTokenList.length).to.be.eq(3);
+      expect(beforeTokenList.includes(tokenAddress)).to.be.true;
+      expect(afterTokenList.length).to.be.eq(2);
+      expect(afterTokenList.includes(tokenAddress)).to.be.false;
+      expect(await stake.getMinimumAmount(tokenAddress)).to.be.eq(0);
+      expect(await stake.getRegisteredVToken(tokenAddress)).to.be.eq(ZERO_ADDRESS);
     });
   });
 });

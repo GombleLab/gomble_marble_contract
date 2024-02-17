@@ -7,14 +7,14 @@ import "../lib/SafeMath.sol";
 
 contract VTokenMocked is ERC20Mocked {
     using SafeMath for uint256;
-    IERC20 public _underlying;
+    ERC20Mocked public _underlying;
     constructor(
         string memory name,
         string memory symbol,
         uint8 decimals,
         address underlying
     ) public ERC20Mocked(name, symbol, decimals) {
-        _underlying = IERC20(underlying);
+        _underlying = ERC20Mocked(underlying);
     }
 
     function mint(uint256 mintAmount) external returns (uint256) {
@@ -23,8 +23,8 @@ contract VTokenMocked is ERC20Mocked {
     }
 
     function redeem(uint256 redeemTokens) external returns (uint256) {
-        super.burn(msg.sender, redeemTokens.mul(15000).div(10000));
-        _underlying.transfer(msg.sender, redeemTokens);
+        super.burn(msg.sender, redeemTokens);
+        _underlying.mint(msg.sender, redeemTokens);
     }
 
     function underlying() external view returns (address) {
@@ -32,6 +32,10 @@ contract VTokenMocked is ERC20Mocked {
     }
 
     function balanceOfUnderlying(address owner) external view returns (uint256) {
-        return super.balanceOf(owner).mul(11000).div(10000);
+        return super.balanceOf(owner)
+                        .mul(20000)
+                        .div(30000)
+                        .mul(11000)
+                        .div(10000);
     }
 }

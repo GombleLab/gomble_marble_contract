@@ -5,7 +5,9 @@ interface IVToken {
 
     function mint(uint mintAmount) external returns (uint);
 
-    function redeem(uint redeemTokens) external returns (uint256);
+    function redeem(uint redeemTokens) external returns (uint);
+
+    function redeemUnderlying(uint redeemTokens) external returns (uint);
 
     function name() external view returns (string memory);
 
@@ -21,5 +23,9 @@ interface IVToken {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function balanceOfUnderlying(address owner) external view returns (uint256);
+    function balanceOfUnderlying(address owner) external returns (uint256);
+
+    function exchangeRateStored() external view returns (uint);
+
+    function accrueInterest() external returns (uint);
 }

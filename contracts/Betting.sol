@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "./lib/Ownable.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
@@ -23,7 +22,7 @@ contract Betting is Ownable {
         address _claimOwner
     ) public Ownable(initialOwner) {
         betOwner = _betOwner;
-        _claimOwner = claimOwner;
+        claimOwner = _claimOwner;
     }
 
     function bet(uint256 amount, uint256 nonce, bytes memory signature) external {
@@ -31,6 +30,7 @@ contract Betting is Ownable {
         require(!betNonce[user][nonce], 'ALREADY USED NONCE');
         verifySignature(betOwner, nonce, signature);
         bettingAmount[user] = bettingAmount[user] + amount;
+        betNonce[user][nonce] = true;
     }
 
     function claim(uint256 amount, uint256 nonce, bytes memory signature) external {
@@ -38,6 +38,7 @@ contract Betting is Ownable {
         require(!claimNonce[user][nonce], 'ALREADY USED NONCE');
         verifySignature(claimOwner, nonce, signature);
         claimAmount[user] = claimAmount[user] + amount;
+        claimNonce[user][nonce] = true;
     }
 
     function changeBetOwner(address owner) public onlyOwner {
@@ -58,41 +59,7 @@ contract Betting is Ownable {
 
     function verifySignature(address owner, uint256 nonce, bytes memory signature) public {
         bytes32 messageHash = keccak256(abi.encodePacked(nonce));
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
-
-        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
-        address signer = ecrecover(ethSignedMessageHash, v, r, s);
-        console.logBytes32(messageHash);
-        console.logBytes32(ethSignedMessageHash);
-        console.logUint(v);
-        console.logBytes32(r);
-        console.logBytes32(s);
-        console.logBytes(signature);
-        console.log('in nonce ', nonce);
-        console.log('in signer ', signer);
-        console.log('in owner ', owner);
-        console.log(signer == owner);
-
-        address signeraddress = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
-        console.log('in signer2 ', signeraddress);
-
+        address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
         require(signer == owner, 'INVALID SIGNATURE');
-    }
-
-    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32)
-    {
-        require(sig.length == 65, "invalid signature length");
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        assembly {
-            r := mload(add(sig, 32))
-            s := mload(add(sig, 64))
-            v := byte(0, mload(add(sig, 96)))
-        }
-
-        return (v, r, s);
     }
 }
