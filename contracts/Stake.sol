@@ -116,6 +116,8 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         {
             uint256 totalStakedAmount = getTotalStaked(token);
             uint256 userStakedAmount = getStakedAmountOf(token, user);
+            require(totalStakedAmount >= _amount, 'INVALID TOTAL AMOUNT');
+            require(userStakedAmount >= _amount, 'INVALID USER AMOUNT');
             uint256 userStakeRate = userStakedAmount
                                     .mul(PRECISION)
                                     .div(totalStakedAmount);
