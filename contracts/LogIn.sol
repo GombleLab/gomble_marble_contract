@@ -17,12 +17,16 @@ contract LogIn is Ownable {
         claimOwner = _claimOwner;
     }
 
-    function claim(uint256 nonce, bytes memory signature) external onlyOwner {
+    function claim(uint256 nonce, bytes memory signature) external {
         address user = msg.sender;
         require(!claimNonce[user][nonce], 'ALREADY USED NONCE');
         _verifySignature(claimOwner, nonce, signature);
         loginCount[msg.sender] += 1;
         claimNonce[user][nonce] = true;
+    }
+
+    function changeClaimOwner(address newOwner) external onlyOwner {
+        claimOwner = newOwner;
     }
 
     function _verifySignature(address owner, uint256 nonce, bytes memory signature) internal {
