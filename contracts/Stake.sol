@@ -9,11 +9,12 @@ import "./lib/Ownable.sol";
 import "./venus/ExponentialNoError.sol";
 import "./venus/CarefulMath.sol";
 import "./venus/Exponential.sol";
-import "./lib/VersionedInitializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "hardhat/console.sol";
 
-contract Stake is Ownable, Exponential, VersionedInitializable {
+contract Stake is OwnableUpgradeable, Exponential {
     using SafeMath for uint256;
     using ECDSA for bytes32;
 
@@ -33,14 +34,11 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
     address public farmOwner;
     mapping(address => mapping(uint256 => bool)) farmNonce;
 
-    uint256 public constant REVISION = 1;
-
     event Stake(address token, address user, uint256 amount);
     event Unstake(address token, address user, uint256 amount, uint256 treasuryAmount);
 
-    constructor(address initialOwner) public Ownable(initialOwner) {}
-
     function initialize(
+        address initialOwner,
         address _treasury,
         address _unitroller,
         address _vBNB,
@@ -50,6 +48,7 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
         uint256[] memory minimumAmounts
     ) external initializer {
         require(tokens.length == minimumAmounts.length, 'INVALID TOKEN LENGTH');
+        __Ownable_init(initialOwner);
         unitroller = IUnitroller(_unitroller);
         treasury = _treasury;
         farmOwner = _farmOwner;
@@ -229,10 +228,6 @@ contract Stake is Ownable, Exponential, VersionedInitializable {
 
     function getRegisteredTokens() public view returns (address[] memory) {
         return _tokenList;
-    }
-
-    function getRevision() internal pure override returns (uint256) {
-        return REVISION;
     }
 
     function farm(uint256 amount, uint256 nonce, bytes memory signature) external {

@@ -22,6 +22,7 @@ describe("Stake Contract Test", function () {
   let stake: Stake;
   let unitrollder: IUnitroller;
   let usdc: ERC20;
+  const proxyAdmin = '0x5e547071B19B187B363Cd75209F5e697629d83f2';
   const ownerAddress = '0x4Eb6b2cbC3Ad6E4a0156245F9e8880fAAaEfa394';
   let owner: Signer;
   const user1Address = '0xC007725DAc82A856d55b3B258325dbE9E994832F';
@@ -49,10 +50,14 @@ describe("Stake Contract Test", function () {
     unitrollder = await ethers.getContractAt('IUnitroller', UNITROLLER_ADDRESS);
     usdc = await ethers.getContractAt('ERC20', USDC_ADDRESS);
 
-    stake = await new Stake__factory(owner).deploy(ownerAddress);
-    await stake.waitForDeployment();
+    const proxy = await ethers.deployContract('InitializableAdminUpgradeabilityProxy');
+    await proxy.waitForDeployment();
 
-    await stake.initialize(
+    const stakeImplementation = await new Stake__factory(owner).deploy();
+    await stakeImplementation.waitForDeployment();
+
+    const encodedParams = stakeImplementation.interface.encodeFunctionData('initialize',[
+      ownerAddress,
       TREASURY_ADDRESS,
       UNITROLLER_ADDRESS,
       VBNB_ADDRESS,
@@ -60,7 +65,15 @@ describe("Stake Contract Test", function () {
       ownerAddress,
       [USDC_ADDRESS],
       [MINIMUM_AMOUNT]
+    ]);
+
+    await proxy['initialize(address,address,bytes)'](
+      stakeImplementation.target,
+      proxyAdmin,
+      encodedParams
     );
+
+    stake = await ethers.getContractAt('Stake', proxy.target);
 
     await usdc.connect(owner).approve(await stake.getAddress(), MAX_UINT256);
     await usdc.connect(user1).approve(await stake.getAddress(), MAX_UINT256);
@@ -71,7 +84,7 @@ describe("Stake Contract Test", function () {
 
   describe("Stake/Unstake", function () {
     it("stake token", async function () {
-      await stake.stake(USDC_ADDRESS, DEFAULT_AMOUNT);
+      await stake.connect(owner).stake(USDC_ADDRESS, DEFAULT_AMOUNT);
       const totalStaked = await stake.getTotalStaked(USDC_ADDRESS);
       expect(totalStaked).to.eq(DEFAULT_AMOUNT);
       const stakedAmount = await stake.getStakedAmountOf(USDC_ADDRESS, ownerAddress);
@@ -79,13 +92,13 @@ describe("Stake Contract Test", function () {
     });
 
     it("unstake token", async function () {
-      await stake.stake(USDC_ADDRESS, DEFAULT_AMOUNT);
+      await stake.connect(owner).stake(USDC_ADDRESS, DEFAULT_AMOUNT);
       await advanceTimeAndBlock(100);
 
       const beforeUserAmount = await usdc.balanceOf(ownerAddress);
       const beforeTreasuryAmount = await usdc.balanceOf(TREASURY_ADDRESS);
 
-      const tx = await stake.unstake(USDC_ADDRESS, DEFAULT_AMOUNT);
+      const tx = await stake.connect(owner).unstake(USDC_ADDRESS, DEFAULT_AMOUNT);
       const receipt = await tx.wait();
 
       const afterUserAmount = await usdc.balanceOf(ownerAddress);
@@ -106,7 +119,7 @@ describe("Stake Contract Test", function () {
     });
 
     it("stake bnb", async function () {
-      await stake.stake(BNB_ADDRESS, DEFAULT_AMOUNT, {
+      await stake.connect(owner).stake(BNB_ADDRESS, DEFAULT_AMOUNT, {
         value: DEFAULT_AMOUNT
       });
       const totalStaked = await stake.getTotalStaked(BNB_ADDRESS);
@@ -117,7 +130,7 @@ describe("Stake Contract Test", function () {
 
     it("unstake bnb", async function () {
 
-      await stake.stake(BNB_ADDRESS, DEFAULT_AMOUNT, {
+      await stake.connect(owner).stake(BNB_ADDRESS, DEFAULT_AMOUNT, {
         value: DEFAULT_AMOUNT
       });
       await advanceTimeAndBlock(100);
@@ -125,7 +138,7 @@ describe("Stake Contract Test", function () {
       const beforeUserAmount = await ethers.provider.getBalance(ownerAddress);
       const beforeTreasuryAmount = await ethers.provider.getBalance(TREASURY_ADDRESS);
 
-      const unstakeTx = await stake.unstake(BNB_ADDRESS, DEFAULT_AMOUNT);
+      const unstakeTx = await stake.connect(owner).unstake(BNB_ADDRESS, DEFAULT_AMOUNT);
       const unstakeReceipt = await unstakeTx.wait();
       const unstakeFee = unstakeReceipt!.gasPrice * unstakeReceipt!.gasUsed;
 
@@ -148,12 +161,12 @@ describe("Stake Contract Test", function () {
 
     it("unstake partially", async function () {
       const partialAmount = DEFAULT_AMOUNT / 3n;
-      await stake.stake(USDC_ADDRESS, DEFAULT_AMOUNT);
+      await stake.connect(owner).stake(USDC_ADDRESS, DEFAULT_AMOUNT);
       await advanceTimeAndBlock(100);
 
       const beforeUserAmount = await usdc.balanceOf(ownerAddress);
 
-      await stake.unstake(USDC_ADDRESS, partialAmount);
+      await stake.connect(owner).unstake(USDC_ADDRESS, partialAmount);
       const afterUserPartialAmount = await usdc.balanceOf(ownerAddress);
       let totalStaked = await stake.getTotalStaked(USDC_ADDRESS);
       expect(totalStaked).to.eq(DEFAULT_AMOUNT - partialAmount);
@@ -162,7 +175,7 @@ describe("Stake Contract Test", function () {
       expect(afterUserPartialAmount - beforeUserAmount).to.eq(partialAmount);
 
       // 나머지 unstake
-      await stake.unstake(USDC_ADDRESS, stakedAmount);
+      await stake.connect(owner).unstake(USDC_ADDRESS, stakedAmount);
       const afterUserAllAmount = await usdc.balanceOf(ownerAddress);
       totalStaked = await stake.getTotalStaked(USDC_ADDRESS);
       expect(totalStaked).to.eq(0);

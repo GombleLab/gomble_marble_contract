@@ -2,6 +2,27 @@ import {task} from "hardhat/config";
 import {ContractConfig, network} from "./types";
 import {mainnetConfig, testnetConfig} from "./constant";
 
+task('deploy-logIn')
+  .setAction(async ({}, hre) => {
+
+    const network = hre.network.name as network;
+    let config: ContractConfig
+    if (network == 'mainnet') {
+      config = mainnetConfig;
+    } else if (network == 'testnet') {
+      config = testnetConfig;
+    } else {
+      throw new Error(`INVALID NETWORK ${network}`);
+    }
+
+    const logIn = await hre.ethers.deployContract('LogIn', [
+      config.betting.owner,
+      config.betting.claimOwner
+    ]);
+    await logIn.waitForDeployment();
+    console.log(`LogIn deployed to ${logIn.target}`);
+  });
+
 task('deploy-betting')
   .setAction(async ({}, hre) => {
 
@@ -26,7 +47,6 @@ task('deploy-betting')
 
 task('deploy-stake')
   .setAction(async ({}, hre) => {
-
     const network = hre.network.name as network;
     let config: ContractConfig
     if (network == 'mainnet') {
@@ -36,12 +56,16 @@ task('deploy-stake')
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
     }
+    const proxy = await hre.ethers.deployContract('InitializableAdminUpgradeabilityProxy');
+    await proxy.waitForDeployment();
+    console.log(`Proxy deployed to ${proxy.target}`);
 
-    const stake = await hre.ethers.deployContract('Stake', [config.stake.owner]);
-    await stake.waitForDeployment();
+    const stakeImplementation = await hre.ethers.deployContract('Stake');
+    await stakeImplementation.waitForDeployment();
+    console.log(`stakeImplementation deployed to ${stakeImplementation.target}`);
 
-    console.log(`Stake deployed to ${stake.target}`);
-    const tx = await stake.initialize(
+    const encodedParams = stakeImplementation.interface.encodeFunctionData('initialize',[
+      config.stake.owner,
       config.stake.treasury,
       config.stake.unitroller,
       config.stake.vBNB,
@@ -49,7 +73,13 @@ task('deploy-stake')
       config.stake.farmOwner,
       config.stake.tokens,
       config.stake.minimumAmounts,
-    );
+    ]);
 
-    console.log(`Stake initialized at ${tx.hash}`);
+    const tx = await proxy['initialize(address,address,bytes)'](
+      stakeImplementation.target,
+      config.stake.proxyAdmin,
+      encodedParams
+    );
+    await tx.wait();
+    console.log(`proxy initialized at ${tx.hash}`);
   });

@@ -1,4 +1,8 @@
 export interface ContractConfig {
+  logIn: {
+    owner: string,
+    claimOwner: string,
+  }
   betting: {
     owner: string,
     betOwner: string,
@@ -6,6 +10,7 @@ export interface ContractConfig {
   },
   stake: {
     owner: string,
+    proxyAdmin: string,
     treasury: string,
     unitroller: string,
     vBNB: string,

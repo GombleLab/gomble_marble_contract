@@ -1,6 +1,10 @@
 import {ContractConfig} from "./types";
 
 export const testnetConfig: ContractConfig = {
+  logIn: {
+    owner: '',
+    claimOwner: '',
+  },
   betting: {
     owner: '0xF52738a1Dc7C5f70335680D3D7139b2B8fa5650E',
     betOwner: '0xF52738a1Dc7C5f70335680D3D7139b2B8fa5650E',
@@ -8,6 +12,7 @@ export const testnetConfig: ContractConfig = {
   },
   stake: {
     owner: '0xB7Ea16A8A4D86320Ab668D0A7dB457eB52567568',
+    proxyAdmin: '0x702a81C5ad7cc88Ab49297A69A39e8Fbd2056A0C',
     treasury: '0xCDEF7FEAa99E674297A0aCA27EB48B7db09CA9DA',
     unitroller: '0x94d1820b2D1c7c7452A163983Dc888CEC546b77D',
     vBNB: '0x2E7222e51c0f6e98610A1543Aa3836E092CDe62c',
@@ -25,6 +30,10 @@ export const testnetConfig: ContractConfig = {
 }
 
 export const mainnetConfig: ContractConfig = {
+  logIn: {
+    owner: '',
+    claimOwner: '',
+  },
   betting: {
     owner: '',
     betOwner: '',
@@ -32,6 +41,7 @@ export const mainnetConfig: ContractConfig = {
   },
   stake: {
     owner: '',
+    proxyAdmin: '',
     treasury: '',
     unitroller: '',
     vBNB: '',

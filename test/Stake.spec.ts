@@ -9,7 +9,7 @@ import {
   VTokenMocked__factory
 } from "../typechain-types";
 import {MAX_UINT256, ZERO_ADDRESS} from "../tasks/utils";
-import {advanceTimeAndBlock, getRandomUint256, makeMessage} from "./utils";
+import {advanceTimeAndBlock, getRandomUint256, makeBettingMessage} from "./utils";
 import type {Signer} from "ethers";
 
 describe("Stake Contract Test", function () {
@@ -23,6 +23,7 @@ describe("Stake Contract Test", function () {
   let stake: Stake;
   let signerAddress: string;
   let signer: Signer;
+  let proxyAdmin: Signer;
   let farmOwner: Signer;
   let user1: Signer;
   let user2: Signer;
@@ -31,7 +32,7 @@ describe("Stake Contract Test", function () {
   let treasury: Signer;
 
   beforeEach(async () => {
-    [signer, farmOwner, user1, user2, user3, user4, treasury] = await ethers.getSigners();
+    [signer, proxyAdmin, farmOwner, user1, user2, user3, user4, treasury] = await ethers.getSigners();
     signerAddress = await signer.getAddress();
 
     underlyingMocked1 = await new ERC20Mocked__factory(signer).deploy(
@@ -80,11 +81,14 @@ describe("Stake Contract Test", function () {
     ]);
     await unitroller.waitForDeployment();
 
-    // stake
-    stake = await new Stake__factory(signer).deploy(signerAddress);
-    await stake.waitForDeployment();
+    const proxy = await ethers.deployContract('InitializableAdminUpgradeabilityProxy');
+    await proxy.waitForDeployment();
 
-    await stake.initialize(
+    const stakeImplementation = await new Stake__factory(signer).deploy();
+    await stakeImplementation.waitForDeployment();
+
+    const encodedParams = stakeImplementation.interface.encodeFunctionData('initialize',[
+      signerAddress,
       await treasury.getAddress(),
       await unitroller.getAddress(),
       await vBnbMocked.getAddress(),
@@ -92,7 +96,16 @@ describe("Stake Contract Test", function () {
       await farmOwner.getAddress(),
       [await underlyingMocked1.getAddress()],
       [MINIMUM_AMOUNT]
+    ]);
+
+    await proxy['initialize(address,address,bytes)'](
+      stakeImplementation.target,
+      await proxyAdmin.getAddress(),
+      encodedParams
     );
+
+    // stake
+    stake = await ethers.getContractAt('Stake', proxy.target);
 
     await underlyingMocked1.mint(signerAddress, DEFAULT_AMOUNT);
     await underlyingMocked1.approve(await stake.getAddress(), MAX_UINT256);
@@ -148,7 +161,7 @@ describe("Stake Contract Test", function () {
 
     it("farm", async function() {
       const nonce = getRandomUint256();
-      const signature = await farmOwner.signMessage(makeMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await farmOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
       await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
       const mmAmount = await stake.getMMAmount(await user1.getAddress());
       expect(mmAmount).to.be.eq(DEFAULT_AMOUNT);
@@ -156,7 +169,7 @@ describe("Stake Contract Test", function () {
 
     it("farm, used nonce", async function() {
       const nonce = getRandomUint256();
-      const signature = await farmOwner.signMessage(makeMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await farmOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
       await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
       await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
     });
