@@ -86,6 +86,7 @@ contract Stake is OwnableUpgradeable, Exponential {
         require(_vTokenMap[token] != address(0), 'INVALID TOKEN');
         require(amount >= _minimumAmount[token], 'INVALID MINIMUM AMOUNT');
         address user = msg.sender;
+        require(!_isContract(user), 'ONLY EOA');
         address vToken = _vTokenMap[token];
         if (token == BNB) {
             require(amount == msg.value, 'INVALID BNB AMOUNT');
@@ -106,6 +107,7 @@ contract Stake is OwnableUpgradeable, Exponential {
     function unstake(address token, uint256 amount) external {
         require(_vTokenMap[token] != address(0), 'INVALID TOKEN');
         address user = msg.sender;
+        require(!_isContract(user), 'ONLY EOA');
         IVToken vToken = IVToken(_vTokenMap[token]);
         uint256 _amount = amount;
         uint256 allocatedInterest;
@@ -133,6 +135,10 @@ contract Stake is OwnableUpgradeable, Exponential {
         uint error = vToken.redeemUnderlying(redeemAmount);
         require(error == 0, string(abi.encodePacked('UNSTAKE ERROR: ', error)));
 
+        _totalStakedAmount[token] = _totalStakedAmount[token].sub(_amount);
+        uint256 userStakedAmount = _userTokenStaked[token][user].sub(_amount);
+        _userTokenStaked[token][user] = userStakedAmount;
+
         if (token == BNB) {
             user.call{value: _amount}("");
             treasury.call{value: allocatedInterest}("");
@@ -140,9 +146,6 @@ contract Stake is OwnableUpgradeable, Exponential {
             IERC20(token).transfer(user, _amount);
             IERC20(token).transfer(treasury, allocatedInterest);
         }
-        _totalStakedAmount[token] = _totalStakedAmount[token].sub(_amount);
-        uint256 userStakedAmount = _userTokenStaked[token][user].sub(_amount);
-        _userTokenStaked[token][user] = userStakedAmount;
 
         emit Unstake(token, user, amount, allocatedInterest);
     }
@@ -264,6 +267,14 @@ contract Stake is OwnableUpgradeable, Exponential {
         bytes32 messageHash = keccak256(abi.encode(nonce, amount));
         address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
         require(signer == owner, 'INVALID SIGNATURE');
+    }
+
+    function _isContract(address addr) internal view returns (bool) {
+        uint32 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 
     receive() external payable {}

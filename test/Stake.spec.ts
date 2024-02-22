@@ -3,7 +3,7 @@ import {ethers} from "hardhat";
 import {
   ERC20Mocked,
   ERC20Mocked__factory,
-  Stake, Stake__factory,
+  Stake, Stake__factory, StakeCallContractMocked, StakeCallContractMocked__factory,
   UnitrollerMocked__factory, VBnbMocked, VBnbMocked__factory,
   VTokenMocked,
   VTokenMocked__factory
@@ -20,6 +20,7 @@ describe("Stake Contract Test", function () {
   let vTokenMocked2: VTokenMocked;
   let underlyingMocked2: ERC20Mocked;
   let vBnbMocked: VBnbMocked;
+  let stakeCallContractMocked: StakeCallContractMocked;
   let stake: Stake;
   let signerAddress: string;
   let signer: Signer;
@@ -107,6 +108,9 @@ describe("Stake Contract Test", function () {
     // stake
     stake = await ethers.getContractAt('Stake', proxy.target);
 
+    stakeCallContractMocked = await new StakeCallContractMocked__factory(signer).deploy(await stake.getAddress());
+    await stakeCallContractMocked.waitForDeployment();
+
     await underlyingMocked1.mint(signerAddress, DEFAULT_AMOUNT);
     await underlyingMocked1.approve(await stake.getAddress(), MAX_UINT256);
 
@@ -172,6 +176,20 @@ describe("Stake Contract Test", function () {
       const signature = await farmOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
       await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
       await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
+    });
+
+    it("cannot stake from CA", async function() {
+      await expect(stakeCallContractMocked.stake(
+        await underlyingMocked1.getAddress(),
+        DEFAULT_AMOUNT
+      )).to.be.revertedWith('ONLY EOA');
+    });
+
+    it("cannot unstake from CA", async function() {
+      await expect(stakeCallContractMocked.unstake(
+        await underlyingMocked1.getAddress(),
+        DEFAULT_AMOUNT
+      )).to.be.revertedWith('ONLY EOA');
     });
   });
 });
