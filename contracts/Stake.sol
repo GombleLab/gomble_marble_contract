@@ -196,6 +196,7 @@ contract Stake is OwnableUpgradeable, Exponential {
 
     function removeToken(address token) external onlyOwner {
         require(_vTokenMap[token] != address(0), 'NOT REGISTERED TOKEN');
+        require(getTotalStaked(token) == 0, 'REMAINING STAKED AMOUNT');
 
         for(uint256 i = 0; i < _tokenList.length; i++) {
             if (_tokenList[i] == token) {

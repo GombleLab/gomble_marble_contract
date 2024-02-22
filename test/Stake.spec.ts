@@ -163,6 +163,15 @@ describe("Stake Contract Test", function () {
       expect(await stake.getRegisteredVToken(tokenAddress)).to.be.eq(ZERO_ADDRESS);
     });
 
+    it("remove failed when staked amount remained", async function () {
+      const tokenAddress = await underlyingMocked2.getAddress();
+      await stake.addToken(tokenAddress, MINIMUM_AMOUNT);
+      await underlyingMocked2.mint(signerAddress, DEFAULT_AMOUNT);
+      await underlyingMocked2.approve(await stake.getAddress(), MAX_UINT256);
+      await stake.stake(tokenAddress, DEFAULT_AMOUNT);
+      await expect(stake.removeToken(tokenAddress)).to.be.revertedWith('REMAINING STAKED AMOUNT');
+    });
+
     it("farm", async function() {
       const nonce = getRandomUint256();
       const signature = await farmOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
