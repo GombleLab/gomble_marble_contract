@@ -165,15 +165,27 @@ describe("Stake Contract Test", function () {
 
     it("farm", async function() {
       const nonce = getRandomUint256();
-      const signature = await farmOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await farmOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
       const mmAmount = await stake.getMMAmount(await user1.getAddress());
       expect(mmAmount).to.be.eq(DEFAULT_AMOUNT);
     });
 
+    it("farm, invalid signature", async function() {
+      const nonce = getRandomUint256();
+      const signature = await user1.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
+      await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
+    });
+
+    it("farm, from another address", async function() {
+      const nonce = getRandomUint256();
+      const signature = await farmOwner.signMessage(makeBettingMessage(await user2.getAddress(), nonce, DEFAULT_AMOUNT));
+      await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
+    });
+
     it("farm, used nonce", async function() {
       const nonce = getRandomUint256();
-      const signature = await farmOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await farmOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       await stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature);
       await expect(stake.connect(user1).farm(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
     });

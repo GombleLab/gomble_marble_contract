@@ -20,7 +20,7 @@ contract LogIn is Ownable {
     function claim(uint256 nonce, bytes memory signature) external {
         address user = msg.sender;
         require(!claimNonce[user][nonce], 'ALREADY USED NONCE');
-        _verifySignature(claimOwner, nonce, signature);
+        _verifySignature(claimOwner, user, nonce, signature);
         loginCount[msg.sender] += 1;
         claimNonce[user][nonce] = true;
     }
@@ -29,8 +29,8 @@ contract LogIn is Ownable {
         claimOwner = newOwner;
     }
 
-    function _verifySignature(address owner, uint256 nonce, bytes memory signature) internal {
-        bytes32 messageHash = keccak256(abi.encode(nonce));
+    function _verifySignature(address owner, address sender, uint256 nonce, bytes memory signature) internal {
+        bytes32 messageHash = keccak256(abi.encode(sender, nonce));
         address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
         require(signer == owner, 'INVALID SIGNATURE');
     }

@@ -29,7 +29,7 @@ describe("Betting Contract Test", function () {
   describe("bet", function () {
     it("success bet", async function () {
       const nonce = getRandomUint256();
-      const signature = await betOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await betOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       const beforeAmount = await betting.getBetAmount(await user1.getAddress());
       await betting.connect(user1).bet(DEFAULT_AMOUNT, nonce, signature);
       const afterAmount = await betting.getBetAmount(await user1.getAddress());
@@ -38,13 +38,19 @@ describe("Betting Contract Test", function () {
 
     it("failed to bet with invalid signature", async function () {
       const nonce = getRandomUint256();
-      const signature = await owner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await owner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
+      await expect(betting.connect(user1).bet(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
+    });
+
+    it("failed to bet from another address", async function () {
+      const nonce = getRandomUint256();
+      const signature = await owner.signMessage(makeBettingMessage(await user2.getAddress(), nonce, DEFAULT_AMOUNT));
       await expect(betting.connect(user1).bet(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
     });
 
     it("failed to bet with already used nonce", async function () {
       const nonce = getRandomUint256();
-      const signature = await betOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await betOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       await betting.connect(user1).bet(DEFAULT_AMOUNT, nonce, signature);
       await expect(betting.connect(user1).bet(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
     });
@@ -53,7 +59,7 @@ describe("Betting Contract Test", function () {
   describe("claim", function () {
     it("success claim", async function () {
       const nonce = getRandomUint256();
-      const signature = await claimOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await claimOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       const beforeAmount = await betting.getClaimAmount(await user1.getAddress());
       await betting.connect(user1).claim(DEFAULT_AMOUNT, nonce, signature);
       const afterAmount = await betting.getClaimAmount(await user1.getAddress());
@@ -62,13 +68,19 @@ describe("Betting Contract Test", function () {
 
     it("failed to bet with invalid signature", async function () {
       const nonce = getRandomUint256();
-      const signature = await owner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await owner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
+      await expect(betting.connect(user1).claim(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
+    });
+
+    it("failed to bet from another address", async function () {
+      const nonce = getRandomUint256();
+      const signature = await owner.signMessage(makeBettingMessage(await user2.getAddress(), nonce, DEFAULT_AMOUNT));
       await expect(betting.connect(user1).claim(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
     });
 
     it("failed to bet with already used nonce", async function () {
       const nonce = getRandomUint256();
-      const signature = await claimOwner.signMessage(makeBettingMessage(nonce, DEFAULT_AMOUNT));
+      const signature = await claimOwner.signMessage(makeBettingMessage(await user1.getAddress(), nonce, DEFAULT_AMOUNT));
       await betting.connect(user1).claim(DEFAULT_AMOUNT, nonce, signature);
       await expect(betting.connect(user1).claim(DEFAULT_AMOUNT, nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
     });

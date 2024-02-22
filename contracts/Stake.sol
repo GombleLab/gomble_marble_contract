@@ -234,10 +234,11 @@ contract Stake is OwnableUpgradeable, Exponential {
     }
 
     function farm(uint256 amount, uint256 nonce, bytes memory signature) external {
-        require(!farmNonce[msg.sender][nonce], 'ALREADY USED NONCE');
-        _verifySignature(farmOwner, nonce, amount, signature);
-        _mmAmount[msg.sender] = _mmAmount[msg.sender].add(amount);
-        farmNonce[msg.sender][nonce] = true;
+        address user = msg.sender;
+        require(!farmNonce[user][nonce], 'ALREADY USED NONCE');
+        _verifySignature(farmOwner, user, nonce, amount, signature);
+        _mmAmount[user] = _mmAmount[user].add(amount);
+        farmNonce[user][nonce] = true;
     }
 
     function getMMAmount(address user) external view returns (uint256) {
@@ -263,8 +264,8 @@ contract Stake is OwnableUpgradeable, Exponential {
         return (MathError.NO_ERROR, truncate(product));
     }
 
-    function _verifySignature(address owner, uint256 nonce, uint256 amount, bytes memory signature) internal {
-        bytes32 messageHash = keccak256(abi.encode(nonce, amount));
+    function _verifySignature(address owner, address sender, uint256 nonce, uint256 amount, bytes memory signature) internal {
+        bytes32 messageHash = keccak256(abi.encode(sender, nonce, amount));
         address signer = MessageHashUtils.toEthSignedMessageHash(messageHash).recover(signature);
         require(signer == owner, 'INVALID SIGNATURE');
     }

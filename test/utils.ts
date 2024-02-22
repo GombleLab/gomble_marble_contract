@@ -16,10 +16,10 @@ export async function advanceBlock(count = 1) {
   }
 }
 
-export function makeLogInMessage(nonce: string) {
+export function makeLogInMessage(sender: string, nonce: string) {
   const encodedData = AbiCoder.defaultAbiCoder().encode(
-    ["uint256"],
-    [nonce]
+    ["address", "uint256"],
+    [sender, nonce]
   );
 
   const dataHash = ethers.keccak256(encodedData);
@@ -28,10 +28,10 @@ export function makeLogInMessage(nonce: string) {
   return ethers.toBeArray(dataHash);
 }
 
-export function makeBettingMessage(nonce: string, amount: bigint | string) {
+export function makeBettingMessage(sender: string, nonce: string, amount: bigint | string) {
   const encodedData = AbiCoder.defaultAbiCoder().encode(
-    ["uint256", "uint256"],
-    [nonce, amount]
+    ["address", "uint256", "uint256"],
+    [sender, nonce, amount]
   );
 
   const dataHash = ethers.keccak256(encodedData);

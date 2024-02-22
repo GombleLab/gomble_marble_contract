@@ -10,10 +10,11 @@ import {getRandomUint256, makeBettingMessage, makeLogInMessage} from "./utils";
 describe("LogIn Contract Test", function () {
   let logIn: LogIn;
   let owner: Signer;
+  let user: Signer;
   let claimOwner: Signer;
 
   beforeEach(async () => {
-    [ owner, claimOwner ] = await ethers.getSigners();
+    [ owner, user, claimOwner ] = await ethers.getSigners();
     logIn = await new LogIn__factory(owner).deploy(
       await owner.getAddress(),
       await claimOwner.getAddress(),
@@ -24,23 +25,29 @@ describe("LogIn Contract Test", function () {
   describe("claim", function () {
     it("success to login", async function () {
       const nonce = getRandomUint256();
-      const signature = await claimOwner.signMessage(makeLogInMessage(nonce));
+      const signature = await claimOwner.signMessage(makeLogInMessage(await owner.getAddress(), nonce));
       await logIn.claim(nonce, signature);
       const loginCount = await logIn.loginCount(await owner.getAddress());
       expect(loginCount).to.eq(1);
     });
 
-    it("failed to bet with invalid signature", async function () {
+    it("failed to login with invalid signature", async function () {
       const nonce = getRandomUint256();
-      const signature = await owner.signMessage(makeLogInMessage(nonce));
+      const signature = await owner.signMessage(makeLogInMessage(await owner.getAddress(), nonce));
       await expect(logIn.claim(nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
     });
 
-    it("failed to bet with already used nonce", async function () {
+    it("failed to login with already used nonce", async function () {
       const nonce = getRandomUint256();
-      const signature = await claimOwner.signMessage(makeLogInMessage(nonce));
+      const signature = await claimOwner.signMessage(makeLogInMessage(await owner.getAddress(), nonce));
       await logIn.claim(nonce, signature);
       await expect(logIn.claim(nonce, signature)).to.be.revertedWith('ALREADY USED NONCE');
+    });
+
+    it("failed to login from another address", async function () {
+      const nonce = getRandomUint256();
+      const signature = await claimOwner.signMessage(makeLogInMessage(await user.getAddress(), nonce));
+      await expect(logIn.claim(nonce, signature)).to.be.revertedWith('INVALID SIGNATURE');
     });
   });
 });
