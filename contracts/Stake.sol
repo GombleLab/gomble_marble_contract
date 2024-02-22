@@ -36,6 +36,11 @@ contract Stake is OwnableUpgradeable, Exponential {
 
     event Stake(address token, address user, uint256 amount);
     event Unstake(address token, address user, uint256 amount, uint256 treasuryAmount);
+    event AddToken(address token, uint256 minimumAmount);
+    event RemoveToken(address token);
+    event ChangeTreasury(address _befoer, address _after);
+    event ChangeFarmOwner(address _befoer, address _after);
+    event ChangeMinimumAmount(address token, uint256 _befoer, uint256 _after);
 
     function initialize(
         address initialOwner,
@@ -192,6 +197,8 @@ contract Stake is OwnableUpgradeable, Exponential {
             }
         }
         require(hasToken, 'HAS NO TOKEN IN MARKET');
+
+        emit AddToken(token, minimumAmount);
     }
 
     function removeToken(address token) external onlyOwner {
@@ -204,6 +211,7 @@ contract Stake is OwnableUpgradeable, Exponential {
                 _tokenList.pop();
                 _vTokenMap[token] = address(0);
                 _minimumAmount[token] = 0;
+                emit RemoveToken(token);
                 break;
             }
         }
@@ -211,15 +219,19 @@ contract Stake is OwnableUpgradeable, Exponential {
 
     function changeTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
+        emit ChangeTreasury(treasury, _treasury);
     }
 
     function changeFarmOwner(address newOwner) public onlyOwner {
         farmOwner = newOwner;
+        emit ChangeFarmOwner(farmOwner, newOwner);
     }
 
     function changeMinimumAmount(address token, uint256 amount) external onlyOwner {
         require(_vTokenMap[token] != address(0), 'NOT REGISTERED TOKEN');
+        uint256 beforeAmount = _minimumAmount[token];
         _minimumAmount[token] = amount;
+        emit ChangeMinimumAmount(token, beforeAmount, amount);
     }
 
     function getMinimumAmount(address token) public view returns (uint256) {
@@ -279,5 +291,7 @@ contract Stake is OwnableUpgradeable, Exponential {
         return size > 0;
     }
 
-    receive() external payable {}
+    receive() external payable {
+        revert();
+    }
 }
