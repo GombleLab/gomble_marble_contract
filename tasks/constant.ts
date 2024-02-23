@@ -2,8 +2,8 @@ import {ContractConfig} from "./types";
 
 export const testnetConfig: ContractConfig = {
   logIn: {
-    owner: '',
-    claimOwner: '',
+    owner: '0x322C2af3b801714cbDcc24622A3e8A8AeFdC0f9A',
+    claimOwner: '0x322C2af3b801714cbDcc24622A3e8A8AeFdC0f9A',
   },
   betting: {
     owner: '0xF52738a1Dc7C5f70335680D3D7139b2B8fa5650E',

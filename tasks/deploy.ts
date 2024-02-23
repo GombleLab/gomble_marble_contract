@@ -7,9 +7,9 @@ task('deploy-logIn')
 
     const network = hre.network.name as network;
     let config: ContractConfig
-    if (network == 'mainnet') {
+    if (network == 'bnb_mainnet') {
       config = mainnetConfig;
-    } else if (network == 'testnet') {
+    } else if (network == 'bnb_testnet') {
       config = testnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
@@ -28,9 +28,9 @@ task('deploy-betting')
 
     const network = hre.network.name as network;
     let config: ContractConfig
-    if (network == 'mainnet') {
+    if (network == 'bnb_mainnet') {
       config = mainnetConfig;
-    } else if (network == 'testnet') {
+    } else if (network == 'bnb_testnet') {
       config = testnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
@@ -49,9 +49,9 @@ task('deploy-stake')
   .setAction(async ({}, hre) => {
     const network = hre.network.name as network;
     let config: ContractConfig
-    if (network == 'mainnet') {
+    if (network == 'bnb_mainnet') {
       config = mainnetConfig;
-    } else if (network == 'testnet') {
+    } else if (network == 'bnb_testnet') {
       config = testnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
