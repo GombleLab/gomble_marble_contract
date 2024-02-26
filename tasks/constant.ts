@@ -1,6 +1,6 @@
 import {ContractConfig} from "./types";
 
-export const testnetConfig: ContractConfig = {
+export const bnbTestnetConfig: ContractConfig = {
   logIn: {
     owner: '0x322C2af3b801714cbDcc24622A3e8A8AeFdC0f9A',
     claimOwner: '0x322C2af3b801714cbDcc24622A3e8A8AeFdC0f9A',
@@ -29,10 +29,39 @@ export const testnetConfig: ContractConfig = {
   }
 }
 
-export const mainnetConfig: ContractConfig = {
+export const bnbMainnetConfig: ContractConfig = {
   logIn: {
     owner: '',
     claimOwner: '',
+  },
+  betting: {
+    owner: '',
+    betOwner: '',
+    claimOwner: '',
+  },
+  stake: {
+    owner: '',
+    proxyAdmin: '',
+    treasury: '',
+    unitroller: '',
+    vBNB: '',
+    bnbMinimumAmount: '',
+    farmOwner: '',
+    tokens: [
+      '', // USDC
+      '', // USDT
+    ],
+    minimumAmounts: [
+      '',
+      '',
+    ]
+  }
+}
+
+export const opBnbMainnetConfig: ContractConfig = {
+  logIn: {
+    owner: '0xA6321CfDff2757Df53fda78C30fd6d745994B306',
+    claimOwner: '0xA6321CfDff2757Df53fda78C30fd6d745994B306',
   },
   betting: {
     owner: '',

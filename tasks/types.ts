@@ -24,4 +24,5 @@ export interface ContractConfig {
 export enum network {
   bnb_mainnet = 'bnb_mainnet',
   bnb_testnet = 'bnb_testnet',
+  opbnb_mainnet = 'opbnb_mainnet',
 }

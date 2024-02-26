@@ -1,6 +1,6 @@
 import {task} from "hardhat/config";
 import {ContractConfig, network} from "./types";
-import {mainnetConfig, testnetConfig} from "./constant";
+import {bnbMainnetConfig, bnbTestnetConfig, opBnbMainnetConfig} from "./constant";
 
 task('deploy-logIn')
   .setAction(async ({}, hre) => {
@@ -8,16 +8,18 @@ task('deploy-logIn')
     const network = hre.network.name as network;
     let config: ContractConfig
     if (network == 'bnb_mainnet') {
-      config = mainnetConfig;
+      config = bnbMainnetConfig;
+    } else if (network == 'opbnb_mainnet') {
+      config = opBnbMainnetConfig;
     } else if (network == 'bnb_testnet') {
-      config = testnetConfig;
+      config = bnbTestnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
     }
 
     const logIn = await hre.ethers.deployContract('LogIn', [
-      config.betting.owner,
-      config.betting.claimOwner
+      config.logIn.owner,
+      config.logIn.claimOwner
     ]);
     await logIn.waitForDeployment();
     console.log(`LogIn deployed to ${logIn.target}`);
@@ -29,9 +31,9 @@ task('deploy-betting')
     const network = hre.network.name as network;
     let config: ContractConfig
     if (network == 'bnb_mainnet') {
-      config = mainnetConfig;
+      config = bnbMainnetConfig;
     } else if (network == 'bnb_testnet') {
-      config = testnetConfig;
+      config = bnbTestnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
     }
@@ -50,9 +52,9 @@ task('deploy-stake')
     const network = hre.network.name as network;
     let config: ContractConfig
     if (network == 'bnb_mainnet') {
-      config = mainnetConfig;
+      config = bnbMainnetConfig;
     } else if (network == 'bnb_testnet') {
-      config = testnetConfig;
+      config = bnbTestnetConfig;
     } else {
       throw new Error(`INVALID NETWORK ${network}`);
     }

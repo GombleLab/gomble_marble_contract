@@ -12,7 +12,6 @@ import "./venus/Exponential.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import "hardhat/console.sol";
 
 contract Stake is OwnableUpgradeable, Exponential {
     using SafeMath for uint256;
@@ -292,6 +291,5 @@ contract Stake is OwnableUpgradeable, Exponential {
     }
 
     receive() external payable {
-        revert();
     }
 }
