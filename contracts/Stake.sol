@@ -257,6 +257,33 @@ contract Stake is OwnableUpgradeable, Exponential {
         return _mmAmount[user];
     }
 
+    function emergencyWithdraw(address token, address to, uint256 amount) external {
+        if (token == BNB) {
+            _withdrawBnb(to, amount);
+        } else {
+            _withdrawToken(token, to, amount);
+        }
+    }
+
+    function _withdrawToken(address token, address to, uint256 amount) internal {
+        if (amount == 0) {
+            IERC20(token).transfer(
+                to,
+                IERC20(token).balanceOf(address(this))
+            );
+        } else {
+            IERC20(token).transfer(to, amount);
+        }
+    }
+
+    function _withdrawBnb(address to, uint256 amount) internal {
+        if (amount == 0) {
+            to.call{value: address(this).balance}("");
+        } else {
+            to.call{value: amount}("");
+        }
+    }
+
     // support for venus
     function _balanceOfUnderlying(address token, address user) internal view returns (uint256) {
         require(_vTokenMap[token] != address(0), 'INVALID TOKEN');
