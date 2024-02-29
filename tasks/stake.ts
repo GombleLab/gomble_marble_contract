@@ -1,5 +1,6 @@
 import {task} from "hardhat/config";
 import {MAX_UINT256} from "./utils";
+import {HardhatRuntimeEnvironment} from "hardhat/types";
 
 const STAKE_ADDRESS = '0x30e5c9E347537008268469e9F3eeB10f879A5F1C';
 const TOKEN_ADDRESS = '0x4B7268FC7C727B88c5Fc127D41b491BfAe63e144';

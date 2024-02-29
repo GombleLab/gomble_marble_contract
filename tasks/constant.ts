@@ -31,29 +31,29 @@ export const bnbTestnetConfig: ContractConfig = {
 
 export const bnbMainnetConfig: ContractConfig = {
   logIn: {
-    owner: '',
-    claimOwner: '',
+    owner: '0xA6321CfDff2757Df53fda78C30fd6d745994B306',
+    claimOwner: '0xA6321CfDff2757Df53fda78C30fd6d745994B306',
   },
   betting: {
-    owner: '',
-    betOwner: '',
-    claimOwner: '',
+    owner: '0xB13F45eA9330c111BE81cBe860660CA317D7fD8c',
+    betOwner: '0xB13F45eA9330c111BE81cBe860660CA317D7fD8c',
+    claimOwner: '0xB13F45eA9330c111BE81cBe860660CA317D7fD8c',
   },
   stake: {
-    owner: '',
-    proxyAdmin: '',
-    treasury: '',
-    unitroller: '',
-    vBNB: '',
-    bnbMinimumAmount: '',
-    farmOwner: '',
+    owner: '0x67448Cc9878Cee32aa05C64593Af30F53c5cAFe6',
+    proxyAdmin: '0xb37A5927851F5E0E38B8D40c3Bc3E8Dd632292F8',
+    treasury: '0x850fA53C201c7816DE22852EE03E0A0335453F41',
+    unitroller: '0xfD36E2c2a6789Db23113685031d7F16329158384',
+    vBNB: '0xA07c5b74C9B40447a954e1466938b865b6BBea36',
+    bnbMinimumAmount: '100000000000000000',
+    farmOwner: '0x67448Cc9878Cee32aa05C64593Af30F53c5cAFe6',
     tokens: [
-      '', // USDC
-      '', // USDT
+      '0x55d398326f99059fF775485246999027B3197955', // USDT
+      '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
     ],
     minimumAmounts: [
-      '',
-      '',
+      '10000000000000000000',
+      '10000000000000000000',
     ]
   }
 }

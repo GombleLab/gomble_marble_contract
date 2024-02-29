@@ -257,7 +257,7 @@ contract Stake is OwnableUpgradeable, Exponential {
         return _mmAmount[user];
     }
 
-    function emergencyWithdraw(address token, address to, uint256 amount) external {
+    function emergencyWithdraw(address token, address to, uint256 amount) external onlyOwner {
         if (token == BNB) {
             _withdrawBnb(to, amount);
         } else {
