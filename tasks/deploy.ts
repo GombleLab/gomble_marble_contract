@@ -85,3 +85,24 @@ task('deploy-stake')
     await tx.wait();
     console.log(`proxy initialized at ${tx.hash}`);
   });
+
+task('deploy-vrf')
+  .setAction(async ({}, hre) => {
+
+    const network = hre.network.name as network;
+    let config: ContractConfig
+    if (network == 'bnb_mainnet') {
+      config = bnbMainnetConfig;
+    } else if (network == 'bnb_testnet') {
+      config = bnbTestnetConfig;
+    } else {
+      throw new Error(`INVALID NETWORK ${network}`);
+    }
+
+    const logIn = await hre.ethers.deployContract('VRF', [
+      config.vrf.owner,
+      config.vrf.coordinator,
+    ]);
+    await logIn.waitForDeployment();
+    console.log(`VRF deployed to ${logIn.target}`);
+  });

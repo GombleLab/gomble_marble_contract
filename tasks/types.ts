@@ -18,7 +18,20 @@ export interface ContractConfig {
     farmOwner: string;
     tokens: string[],
     minimumAmounts: string[],
+  },
+  vrf: {
+    owner: string,
+    coordinator: string,
   }
+}
+
+export interface VrfRequestConfig {
+  vrf: string,
+  keyHash: string,
+  subscriptionId: string,
+  callbackGasLimit: number,
+  numWords: number, // max 500
+  requestConfirmations: number
 }
 
 export enum network {

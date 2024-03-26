@@ -1,4 +1,4 @@
-import {ContractConfig} from "./types";
+import {ContractConfig, VrfRequestConfig} from "./types";
 
 export const bnbTestnetConfig: ContractConfig = {
   logIn: {
@@ -26,6 +26,10 @@ export const bnbTestnetConfig: ContractConfig = {
       '1000000',
       '1000000',
     ]
+  },
+  vrf: {
+    owner: "0x44Fc4B70ACfa13Ba1b0e66729b5AC82D94b0eE1F",
+    coordinator: "0x6A2AAd07396B36Fe02a22b33cf443582f682c82f",
   }
 }
 
@@ -55,6 +59,10 @@ export const bnbMainnetConfig: ContractConfig = {
       '10000000000000000000',
       '10000000000000000000',
     ]
+  },
+  vrf: {
+    owner: "",
+    coordinator: "0xc587d9053cd1118f25F645F9E08BB98c9712A4EE",
   }
 }
 
@@ -84,5 +92,27 @@ export const opBnbMainnetConfig: ContractConfig = {
       '',
       '',
     ]
+  },
+  vrf: {
+    owner: "",
+    coordinator: "",
   }
+}
+
+export const testnetRequestConfig: VrfRequestConfig = {
+  vrf: "0x1B94142778b9E46FEd770fB321e36F3155c98568", // 배포된 vtf 컨트랙트 주소
+  callbackGasLimit: 2500000,
+  keyHash: "0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314", // 50gwei
+  numWords: 100,
+  subscriptionId: "3412",
+  requestConfirmations: 5
+}
+
+export const mainnetRequestConfig: VrfRequestConfig = {
+  vrf: "",
+  callbackGasLimit: 2500000,
+  keyHash: "0xba6e730de88d94a5510ae6613898bfb0c3de5d16e609c5b7da808747125506f7", // 500 gwei
+  numWords: 100,
+  subscriptionId: "",
+  requestConfirmations: 5
 }
